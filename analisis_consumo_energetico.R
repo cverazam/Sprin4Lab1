@@ -1,69 +1,70 @@
-# Crear el código en un archivo .R
 
-code_r = """
-# Paso 1: Crear vectores
-energia <- c(rep("Renovable", 10), rep("No Renovable", 10))
-consumo <- c(15, 20, NA, 30, 22, 18, NA, 25, 28, 16, 10, 14, 30, 20, 19, 21, 27, 22, 26, 15)
-costo_kwh <- c(rep(0.15, 10), rep(0.20, 10))  # Ejemplo de costos
+# Función para leer el archivo de números
+leer_numeros <- function(nombre_archivo) {
+  # Verificar si el archivo existe
+  if (!file.exists(nombre_archivo)) {
+    stop("El archivo no existe.")
+  }
+  
+  # Leer los números del archivo y convertirlos en un vector de enteros
+  numeros <- as.integer(readLines(nombre_archivo))
+  return(numeros)
+}
 
-# Paso 2: Limpieza de datos
-consumo_renovable <- consumo[energia == "Renovable"]
-consumo_no_renovable <- consumo[energia == "No Renovable"]
+# Función para calcular los estadísticos (media, mediana, desviación estándar)
+calcular_estadisticos <- function(numeros) {
+  media <- mean(numeros)
+  mediana <- median(numeros)
+  desviacion_estandar <- sd(numeros)
+  
+  # Verificar si hay alta variabilidad
+  if (desviacion_estandar > 10) {
+    print("Alta variabilidad en los datos (desviación estándar > 10).")
+  }
+  
+  # Devolver los estadísticos en una lista
+  return(list(media = media, mediana = mediana, desviacion_estandar = desviacion_estandar))
+}
 
-# Reemplazar NA por la mediana
-consumo_renovable[is.na(consumo_renovable)] <- median(consumo_renovable, na.rm = TRUE)
-consumo_no_renovable[is.na(consumo_no_renovable)] <- median(consumo_no_renovable, na.rm = TRUE)
+# Función para calcular el cuadrado de cada número usando sapply
+calcular_cuadrados <- function(numeros) {
+  cuadrados <- sapply(numeros, function(x) x^2)
+  return(cuadrados)
+}
 
-# Reintegrar los vectores limpiados al vector consumo
-consumo[energia == "Renovable"] <- consumo_renovable
-consumo[energia == "No Renovable"] <- consumo_no_renovable
+# Función para escribir los resultados en el archivo de salida
+guardar_resultados <- function(estados, cuadrados, nombre_archivo) {
+  # Abrir el archivo para escribir los resultados
+  archivo <- file(nombre_archivo, "w")
+  
+  # Escribir los estadísticos
+  cat("Estadísticos:\n", file = archivo)
+  cat("Media: ", estados$media, "\n", file = archivo)
+  cat("Mediana: ", estados$mediana, "\n", file = archivo)
+  cat("Desviación estándar: ", estados$desviacion_estandar, "\n", file = archivo)
+  
+  # Escribir la lista de cuadrados
+  cat("\nCuadrados de los números:\n", file = archivo)
+  cat(paste(cuadrados, collapse = ", "), "\n", file = archivo)
+  
+  # Cerrar el archivo
+  close(archivo)
+}
 
-# Paso 3: Crear dataframe
-df_consumo <- data.frame(
-  Energia = energia,
-  Consumo = consumo,
-  Costo_kWh = costo_kwh
-)
+# Función principal para ejecutar el flujo
+procesar_numeros <- function() {
+  # Leer los números desde el archivo
+  numeros <- leer_numeros("numeros.txt")
+  
+  # Calcular los estadísticos
+  estadisticas <- calcular_estadisticos(numeros)
+  
+  # Calcular los cuadrados de los números
+  cuadrados <- calcular_cuadrados(numeros)
+  
+  # Guardar los resultados en un archivo
+  guardar_resultados(estadisticas, cuadrados, "resultados.txt")
+}
 
-# Paso 4: Calcular columnas adicionales
-df_consumo$costo_total <- df_consumo$Consumo * df_consumo$Costo_kWh
-df_consumo$ganancia <- df_consumo$costo_total * 1.1  # Aumento del 10%
-
-# Calcular totales por tipo de energía
-total_consumo_renovable <- sum(df_consumo$Consumo[df_consumo$Energia == "Renovable"])
-total_consumo_no_renovable <- sum(df_consumo$Consumo[df_consumo$Energia == "No Renovable"])
-
-total_costo_renovable <- sum(df_consumo$costo_total[df_consumo$Energia == "Renovable"])
-total_costo_no_renovable <- sum(df_consumo$costo_total[df_consumo$Energia == "No Renovable"])
-
-# Media de consumo por tipo de energía
-media_consumo_renovable <- mean(df_consumo$Consumo[df_consumo$Energia == "Renovable"])
-media_consumo_no_renovable <- mean(df_consumo$Consumo[df_consumo$Energia == "No Renovable"])
-
-# Paso 5: Resumen de datos
-df_consumo_ordenado <- df_consumo[order(df_consumo$costo_total, decreasing = TRUE), ]
-
-# Top 3 mayores costos
-top_3_costos <- head(df_consumo_ordenado, 3)
-
-# Crear lista de resumen
-resumen_energia <- list(
-  Total_consumo_renovable = total_consumo_renovable,
-  Total_consumo_no_renovable = total_consumo_no_renovable,
-  Total_costo_renovable = total_costo_renovable,
-  Total_costo_no_renovable = total_costo_no_renovable,
-  Media_consumo_renovable = media_consumo_renovable,
-  Media_consumo_no_renovable = media_consumo_no_renovable,
-  Top_3_Costos = top_3_costos
-)
-
-# Mostrar resumen
-print(resumen_energia)
-"""
-
-# Guardar el código en un archivo .R
-file_path = '/mnt/data/analisis_consumo_energetico.R'
-with open(file_path, 'w') as file:
-    file.write(code_r)
-
-file_path
+# Ejecutar el script
+procesar_numeros()
