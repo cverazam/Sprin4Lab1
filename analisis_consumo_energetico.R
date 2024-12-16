@@ -1,70 +1,66 @@
+# Cargar las librerías necesarias
+if (!require(dplyr)) install.packages("dplyr")
+if (!require(tidyr)) install.packages("tidyr")
 
-# Función para leer el archivo de números
-leer_numeros <- function(nombre_archivo) {
-  # Verificar si el archivo existe
-  if (!file.exists(nombre_archivo)) {
-    stop("El archivo no existe.")
-  }
-  
-  # Leer los números del archivo y convertirlos en un vector de enteros
-  numeros <- as.integer(readLines(nombre_archivo))
-  return(numeros)
-}
+library(dplyr)
+library(tidyr)
 
-# Función para calcular los estadísticos (media, mediana, desviación estándar)
-calcular_estadisticos <- function(numeros) {
-  media <- mean(numeros)
-  mediana <- median(numeros)
-  desviacion_estandar <- sd(numeros)
-  
-  # Verificar si hay alta variabilidad
-  if (desviacion_estandar > 10) {
-    print("Alta variabilidad en los datos (desviación estándar > 10).")
-  }
-  
-  # Devolver los estadísticos en una lista
-  return(list(media = media, mediana = mediana, desviacion_estandar = desviacion_estandar))
-}
+# 1. Cargar el dataset mtcars y convertirlo en un dataframe
+data(mtcars)
+df <- as.data.frame(mtcars)
 
-# Función para calcular el cuadrado de cada número usando sapply
-calcular_cuadrados <- function(numeros) {
-  cuadrados <- sapply(numeros, function(x) x^2)
-  return(cuadrados)
-}
+# 2. Selección de columnas y filtrado de filas
+df_filtered <- df %>%
+  select(mpg, cyl, hp, gear) %>%
+  filter(cyl > 4)
+print("Paso 2: Selección y filtrado de columnas")
+print(df_filtered)
 
-# Función para escribir los resultados en el archivo de salida
-guardar_resultados <- function(estados, cuadrados, nombre_archivo) {
-  # Abrir el archivo para escribir los resultados
-  archivo <- file(nombre_archivo, "w")
-  
-  # Escribir los estadísticos
-  cat("Estadísticos:\n", file = archivo)
-  cat("Media: ", estados$media, "\n", file = archivo)
-  cat("Mediana: ", estados$mediana, "\n", file = archivo)
-  cat("Desviación estándar: ", estados$desviacion_estandar, "\n", file = archivo)
-  
-  # Escribir la lista de cuadrados
-  cat("\nCuadrados de los números:\n", file = archivo)
-  cat(paste(cuadrados, collapse = ", "), "\n", file = archivo)
-  
-  # Cerrar el archivo
-  close(archivo)
-}
+# 3. Ordenación y renombrado de columnas
+df_sorted <- df_filtered %>%
+  arrange(desc(hp)) %>%
+  rename(consumo = mpg, potencia = hp)
+print("Paso 3: Ordenación y renombrado de columnas")
+print(df_sorted)
 
-# Función principal para ejecutar el flujo
-procesar_numeros <- function() {
-  # Leer los números desde el archivo
-  numeros <- leer_numeros("numeros.txt")
-  
-  # Calcular los estadísticos
-  estadisticas <- calcular_estadisticos(numeros)
-  
-  # Calcular los cuadrados de los números
-  cuadrados <- calcular_cuadrados(numeros)
-  
-  # Guardar los resultados en un archivo
-  guardar_resultados(estadisticas, cuadrados, "resultados.txt")
-}
+# 4. Creación de nuevas columnas y agregación de datos
+df_with_efficiency <- df_sorted %>%
+  mutate(eficiencia = consumo / potencia)
 
-# Ejecutar el script
-procesar_numeros()
+df_grouped <- df_with_efficiency %>%
+  group_by(cyl) %>%
+  summarise(consumo_medio = mean(consumo), potencia_maxima = max(potencia))
+print("Paso 4: Nueva columna y agregación de datos")
+print(df_with_efficiency)
+print("Agrupación por cyl")
+print(df_grouped)
+
+# 5. Creación del segundo dataframe y unión de dataframes
+df_transmision <- data.frame(
+  gear = c(3, 4, 5),
+  tipo_transmision = c("Manual", "Automática", "Semiautomática")
+)
+
+df_joined <- left_join(df_with_efficiency, df_transmision, by = "gear")
+print("Paso 5: Unión de dataframes")
+print(df_joined)
+
+# 6. Transformación de formatos (pivot_longer y pivot_wider)
+df_long <- df_joined %>%
+  pivot_longer(cols = c(consumo, potencia, eficiencia), names_to = "medida", values_to = "valor")
+print("Paso 6: Transformación a formato largo")
+print(df_long)
+
+# Identificar duplicados y manejar en formato ancho
+df_long_grouped <- df_long %>%
+  group_by(cyl, gear, tipo_transmision, medida) %>%
+  summarise(valor = mean(valor, na.rm = TRUE))
+
+df_wide <- df_long_grouped %>%
+  pivot_wider(names_from = medida, values_from = valor)
+print("Transformación de nuevo a formato ancho")
+print(df_wide)
+
+# Verificación final
+print("Verificación final")
+print(df_wide)
