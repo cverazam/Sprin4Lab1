@@ -1,66 +1,41 @@
-# Cargar las librerías necesarias
-if (!require(dplyr)) install.packages("dplyr")
-if (!require(tidyr)) install.packages("tidyr")
+---
+title: "Análisis Exploratorio de Datos: mtcars"
+author: "Tu Nombre"
+output:
+  html_document:
+    theme: readable
+    toc: true
+    toc_depth: 2
+---
+  
+# Introducción
+El objetivo de este documento es realizar un análisis exploratorio de datos sobre el conjunto de datos `mtcars`, el cual contiene información sobre varias características de automóviles. Este análisis busca explorar la relación entre diferentes variables y visualizar las características clave a través de tablas y gráficos.
 
-library(dplyr)
-library(tidyr)
+### Puntos clave del análisis:
+1. Carga y visualización inicial de los datos.
+2. Análisis descriptivo y visualización de relaciones entre variables.
+3. Conclusiones sobre los patrones observados en los datos.
 
-# 1. Cargar el dataset mtcars y convertirlo en un dataframe
+# Análisis de Datos
+
+## Carga de Datos
+El conjunto de datos `mtcars` es un dataset incorporado en R que contiene información sobre 32 automóviles. Cada fila representa un automóvil, y las columnas contienen diferentes características, como el número de cilindros, el rendimiento de combustible, la potencia, entre otras.
+
+```{r}
+# Cargar los datos
 data(mtcars)
-df <- as.data.frame(mtcars)
+head(mtcars)  # Mostrar las primeras filas del dataset
 
-# 2. Selección de columnas y filtrado de filas
-df_filtered <- df %>%
-  select(mpg, cyl, hp, gear) %>%
-  filter(cyl > 4)
-print("Paso 2: Selección y filtrado de columnas")
-print(df_filtered)
+library(knitr)
+kable(head(mtcars, 10), caption = "Primeras 10 filas de mtcars")
 
-# 3. Ordenación y renombrado de columnas
-df_sorted <- df_filtered %>%
-  arrange(desc(hp)) %>%
-  rename(consumo = mpg, potencia = hp)
-print("Paso 3: Ordenación y renombrado de columnas")
-print(df_sorted)
+library(DT)
+datatable(mtcars, caption = "Tabla interactiva de mtcars")
 
-# 4. Creación de nuevas columnas y agregación de datos
-df_with_efficiency <- df_sorted %>%
-  mutate(eficiencia = consumo / potencia)
-
-df_grouped <- df_with_efficiency %>%
-  group_by(cyl) %>%
-  summarise(consumo_medio = mean(consumo), potencia_maxima = max(potencia))
-print("Paso 4: Nueva columna y agregación de datos")
-print(df_with_efficiency)
-print("Agrupación por cyl")
-print(df_grouped)
-
-# 5. Creación del segundo dataframe y unión de dataframes
-df_transmision <- data.frame(
-  gear = c(3, 4, 5),
-  tipo_transmision = c("Manual", "Automática", "Semiautomática")
-)
-
-df_joined <- left_join(df_with_efficiency, df_transmision, by = "gear")
-print("Paso 5: Unión de dataframes")
-print(df_joined)
-
-# 6. Transformación de formatos (pivot_longer y pivot_wider)
-df_long <- df_joined %>%
-  pivot_longer(cols = c(consumo, potencia, eficiencia), names_to = "medida", values_to = "valor")
-print("Paso 6: Transformación a formato largo")
-print(df_long)
-
-# Identificar duplicados y manejar en formato ancho
-df_long_grouped <- df_long %>%
-  group_by(cyl, gear, tipo_transmision, medida) %>%
-  summarise(valor = mean(valor, na.rm = TRUE))
-
-df_wide <- df_long_grouped %>%
-  pivot_wider(names_from = medida, values_from = valor)
-print("Transformación de nuevo a formato ancho")
-print(df_wide)
-
-# Verificación final
-print("Verificación final")
-print(df_wide)
+library(ggplot2)
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_point() +
+  labs(title = "Relación entre el peso y el rendimiento de combustible",
+       x = "Peso (wt)",
+       y = "Rendimiento de combustible (mpg)") +
+  theme_minimal()
